@@ -215,6 +215,27 @@ int main() {
     return o;
 }
 
+---
+
+##VALIDA:
+
+ 1: ¿enqueue en cola vacía funciona correctamente? -> ¡SÍ!
+Explicación: Le puse un `if (estaVacia())` para que, si es el primer paciente que entra, tanto el puntero `frente` como el `final` apunten a ese mismo nodo. Así me aseguro de no dejar punteros perdidos.
+
+ 2: ¿dequeue limpia la cola al extraer el último elemento? -> ¡SÍ!
+Explicación: Agregué un `if (frente == nullptr) { final = nullptr; }`. Esto es súper importante porque si saco al último paciente y no hago esto, el puntero `final` se queda apuntando a memoria basura y el programa se me podría crashear más adelante.
+
+ 3: ¿dequeue en cola vacía evita colapsar? -> ¡SÍ!
+Explicación: Al inicio de mi método puse un `if (estaVacia()) return {"", 0};`. Básicamente, si el programa intenta sacar a alguien y la cola está vacía, devuelve un paciente "falso" en vez de lanzarme un error de memoria y cerrar el programa de golpe.
+
+ 4: ¿La Cola de Prioridad extrae el de mayor prioridad? -> ¡SÍ!
+Explicación: Mi lógica acomoda a los pacientes para que los números más chicos (los casos más graves) queden al frente. En la prueba, José que es P1 salió mucho antes que Ana que es P3, a pesar de que Ana llegó primero al hospital.
+
+5: ¿Los empates de prioridad respetan el orden FIFO? -> ¡SÍ!
+Explicación: Esto lo arreglé usando el operador `<=` (menor o igual) en el ciclo while. Así, si llegan dos pacientes con prioridad 2, el que llegó después se forma estrictamente detrás del que llegó primero, respetando el orden de llegada.
+
+ 6: ¿El tamaño de la cola se actualiza correctamente? -> OBSERVACIÓN
+Explicación: Por ahora no agregué una variable para el tamaño porque me enfoqué en que los punteros funcionaran bien. Pero reconozco que sería una buena mejora poner un `int tamano` que sume en enqueue y reste en dequeue; así, si quiero saber cuántos hay formados, me toma un tiempo O(1) en vez de tener que recorrer toda la lista.
 
 
 
