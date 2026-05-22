@@ -1,0 +1,217 @@
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+struct Paciente {
+    string nombre;
+    int prioridad; // 1 = Crítico, 4 = No urgente
+};
+
+class Nodo {
+public:
+    Paciente paciente;
+    Nodo* siguiente;
+
+    Nodo(string nombre, int prioridad) {
+        paciente.nombre = nombre;
+        paciente.prioridad = prioridad;
+        siguiente = nullptr;
+    }
+};
+
+// COLA FIFO (RECEPCIÓN)
+// Usé una lista enlazada simple para la Cola FIFO porque permite inserciones y extracciones en tiempo constante O(1) sin desperdicio de memoria por redimensionamiento.
+class ColaFIFO {
+private:
+    Nodo* frente;
+    Nodo* final;
+
+public:
+    ColaFIFO() {
+        frente = nullptr;
+        final = nullptr;
+    }
+
+    bool estaVacia() {
+        return frente == nullptr;
+    }
+
+    void enqueue(string nombre, int prioridad) {
+        Nodo* nuevo = new Nodo(nombre, prioridad);
+        if (estaVacia()) {
+            frente = final = nuevo;
+        } else {
+            final->siguiente = nuevo;
+            final = nuevo;
+        }
+    }
+
+    Paciente dequeue() {
+        if (estaVacia()) return {"", 0};
+        
+        Nodo* temp = frente;
+        Paciente p = temp->paciente;
+        
+        frente = frente->siguiente;
+        if (frente == nullptr) {
+            final = nullptr;
+        }
+        
+        delete temp;
+        return p;
+    }
+
+    Paciente verFrente() {
+        if (estaVacia()) return {"", 0};
+        return frente->paciente;
+    }
+
+    void mostrar() {
+        Nodo* actual = frente;
+        if (actual == nullptr) {
+            cout << "  [Cola Vacia]" << endl;
+            return;
+        }
+        while (actual != nullptr) {
+            cout << "  -> " << actual->paciente.nombre << " (P" << actual->paciente.prioridad << ")" << endl;
+            actual = actual->siguiente;
+        }
+    }
+};
+
+//  COLA DE PRIORIDAD (TRIAGE)
+//  Para la Cola de Prioridad usé inserción ordenada en lista enlazada. Al manejar flujos pequeños de pacientes simultáneos (<100), el costo O(N) es imperceptible y evita la complejidad de un Heap.
+class ColaPrioridad {
+private:
+    Nodo* frente;
+
+public:
+    ColaPrioridad() {
+        frente = nullptr;
+    }
+
+    bool estaVacia() {
+        return frente == nullptr;
+    }
+
+    void enqueue(string nombre, int prioridad) {
+        Nodo* nuevo = new Nodo(nombre, prioridad);
+        
+        //  Vacía o el nuevo tiene mayor importancia (número menor) que el frente
+        if (frente == nullptr || prioridad < frente->paciente.prioridad) {
+            nuevo->siguiente = frente;
+            frente = nuevo;
+        } 
+        // Buscar la posición correcta de inserción
+        else {
+            Nodo* actual = frente;
+            // //  Se usa '<=' en la comparación para que los pacientes con igual prioridad se formen detrás de los que ya estaban, respetando estrictamente el orden de llegada (cola estable).
+            while (actual->siguiente != nullptr && actual->siguiente->paciente.prioridad <= prioridad) {
+                actual = actual->siguiente;
+            }
+            nuevo->siguiente = actual->siguiente;
+            actual->siguiente = nuevo;
+        }
+    }
+
+    Paciente dequeue() {
+        if (estaVacia()) return {"", 0};
+        
+        Nodo* temp = frente;
+        Paciente p = temp->paciente;
+        frente = frente->siguiente;
+        
+        delete temp;
+        return p;
+        
+    }
+    
+    // Método extracción
+    Paciente extraer() {
+        if (estaVacia()) return {"", 0};
+        Nodo* temp = frente;
+        Paciente p = temp->paciente;
+        frente = frente->siguiente;
+        delete temp;
+        return p;
+    }
+
+    void mostrar() {
+        Nodo* actual = frente;
+        if (actual == nullptr) {
+            cout << "  [Triage Vacio]" << endl;
+            return;
+        }
+        while (actual != nullptr) {
+            cout << "  -> " << actual->paciente.nombre << " [Prioridad " << actual->paciente.prioridad << "]" << endl;
+            actual = actual->siguiente;
+        }
+    }
+};
+
+// SISTEMA DE TRIAGE HOSPITALARIO
+class SistemaTriage {
+private:
+    ColaFIFO recepcion;
+    ColaPrioridad triage;
+
+public:
+    void registrar_llegada(string nombre, int prioridad) {
+        cout << "[Recepcion] Registrando a: " << nombre << " (P" << prioridad << ")" << endl;
+        recepcion.enqueue(nombre, prioridad);
+    }
+
+    void asignar_triage() {
+        if (recepcion.estaVacia()) {
+            cout << "No hay pacientes en recepcion para evaluar." << endl;
+            return;
+        }
+        Paciente p = recepcion.dequeue();
+        cout << "[Triage] Evaluando y clasificando a: " << p.nombre << " con Prioridad " << p.prioridad << endl;
+        triage.enqueue(p.nombre, p.prioridad);
+    }
+
+    Paciente siguiente_a_atender() {
+        return triage.extraer();
+    }
+
+    void mostrarEstados() {
+        cout << "\n ESTADO ACTUAL DEL HOSPITAL " << endl;
+        cout << "Pacientes en Recepcion (FIFO):" << endl;
+        recepcion.mostrar();
+        cout << "Pacientes Clasificados en Triage (Prioridad):" << endl;
+        triage.mostrar();
+    }
+};
+
+//  SIMULACIÓN DE CASO DE PRUEBA
+int main() {
+    SistemaTriage hospital;
+
+    cout << "FASE 1: LLEGADA A RECEPCIÓN " << endl;
+    hospital.registrar_llegada("Ana", 3);
+    hospital.registrar_llegada("Jose", 1);
+    hospital.registrar_llegada("Maria", 2);
+    hospital.registrar_llegada("Carlos", 4);
+    hospital.registrar_llegada("Luisa", 1);
+    
+    hospital.mostrarEstados();
+
+    cout << " FASE 2: ASIGNACIÓN DE TRIAGE " << endl;
+    // Movemos a todos los pacientes de Recepción a Triage
+    for (int i = 0; i < 5; i++) {
+        hospital.asignar_triage();
+    }
+    
+    hospital.mostrarEstados();
+
+    cout << " FASE 3: ORDEN DE ATENCIÓN MÉDICA " << endl;
+    for (int i = 0; i < 5; i++) {
+        Paciente atendido = hospital.siguiente_a_atender();
+        cout << "Atendiendo ahora a: " << atendido.nombre << " [Nivel de Urgencia: " << atendido.prioridad << "]" << endl;
+    }
+
+    return 0;
+}
