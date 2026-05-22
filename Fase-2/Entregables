@@ -212,6 +212,35 @@ int main() {
         Paciente atendido = hospital.siguiente_a_atender();
         cout << "Atendiendo ahora a: " << atendido.nombre << " [Nivel de Urgencia: " << atendido.prioridad << "]" << endl;
     }
-
-    return 0;
+    return o;
 }
+
+
+
+
+---
+
+#REFLEXIONA:
+
+
+## REFLEXIONA-1: 
+Cambiaría mi lista enlazada ordenada por un Heap Binario a partir de los 10,000 pacientes simultáneos en espera. 
+En el contexto de un hospital normal con menos de 100 pacientes, la diferencia entre recorrer O(n) y O(log n) es de apenas unos microsegundos,
+por lo que la lista es ideal por su simplicidad de código. Sin embargo, al pasar la barrera de los 10,000, una inserción O(n)
+forzaría a la CPU a hacer miles de comparaciones bloqueando el sistema, mientras que un Heap O(log n) lo resolvería en apenas unas 14 operaciones.
+
+## REFLEXIONA-2: 
+Mi código sí maneja correctamente los empates es una estructura "estable". Si Ana y María son "Prioridad-2", pero Ana llegó primero, 
+Ana saldrá antes. Esto lo garanticé en el diseño al usar el operador '<=' en el ciclo while de inserción |`actual->siguiente->paciente.prioridad <= prioridad`|.
+Esto le dice al nuevo nodo que siga avanzando hasta colocarse *detrás* de todos los que tengan su mismo nivel de urgencia. 
+En las pruebas, los pacientes con prioridad 1, Jose y Luisa, mantuvieron su orden exacto de llegada
+
+## REFLEXIONA-3: 
+El flujo de vida del dato tiene 3 fases: Primero, el paciente ingresa en bruto a la Recepción (Cola FIFO), 
+respetando estrictamente el orden cronológico. Luego, el enfermero hace dequeue() de la Recepción y un enqueue() en el Triage (Cola de Prioridad),
+donde el paciente es reordenado automáticamente por urgencia. Por último, al ser dado de alta (dequeue de Triage), 
+el doctor hace push() del expediente a la Pila de Historial (LIFO), dejando el caso más reciente en el tope por si necesita revisarlo inmediatamente.
+
+
+
+
